@@ -30,6 +30,51 @@ const LOAD = packed struct(windows.ULONG) {
     _: u20 = 0,
 };
 
+// ---
+// Simple
+// ---
+extern "kernel32" fn GetSystemTimeAsFileTime(out: *windows.LARGE_INTEGER) callconv(.winapi) void;
+pub fn rtlGetSystemTimePrecise() callconv(.winapi) windows.LARGE_INTEGER {
+    var t: windows.LARGE_INTEGER = 0;
+    GetSystemTimeAsFileTime(&t);
+    return t;
+}
+
+extern "kernel32" fn QueryPerformanceCounter(out: *windows.LARGE_INTEGER) callconv(.winapi) windows.BOOL;
+pub fn rtlQueryPerformanceCounter(PerformanceCounter: *windows.LARGE_INTEGER) callconv(.winapi) windows.BOOL {
+    return QueryPerformanceCounter(PerformanceCounter);
+}
+
+extern "kernel32" fn QueryPerformanceFrequency(out: *windows.LARGE_INTEGER) callconv(.winapi) windows.BOOL;
+pub fn rtlQueryPerformanceFrequency(PerformanceFrequency: *windows.LARGE_INTEGER) callconv(.winapi) windows.BOOL {
+    return QueryPerformanceFrequency(PerformanceFrequency);
+}
+
+extern "kernel32" fn ExitProcess(code: u32) callconv(.winapi) noreturn;
+pub fn rtlExitUserProcess(ExitStatus: u32) callconv(.winapi) noreturn {
+    ExitProcess(ExitStatus);
+}
+
+// ---
+// Downgrade
+// ---
+pub fn ntCancelIoFileEx(FileHandle: windows.HANDLE, IoRequestToCancel: *const windows.IO_STATUS_BLOCK, IoStatusBlock: *windows.IO_STATUS_BLOCK) callconv(.winapi) windows.NTSTATUS {
+    _ = IoRequestToCancel;
+    return windows.ntdll.NtCancelIoFile(FileHandle, IoStatusBlock);
+}
+
+// ---
+// Hard-Coded
+// ---
+pub fn ntWaitForAlertByThreadId(Address: ?*const anyopaque, Timeout: ?*const windows.LARGE_INTEGER) callconv(.winapi) windows.NTSTATUS {
+    _ = Address;
+    _ = Timeout;
+    return .TIMEOUT;
+}
+
+// ---
+// WIP
+// ---
 pub fn rtlLookupFunctionEntry(
     ControlPc: usize,
     ImageBase: *usize,
@@ -167,17 +212,6 @@ pub fn ntCancelSynchronousIoFile(
     return @fromBackingInt(0);
 }
 
-pub fn ntCancelIoFileEx(
-    FileHandle: windows.HANDLE,
-    IoRequestToCancel: *const windows.IO_STATUS_BLOCK,
-    IoStatusBlock: *windows.IO_STATUS_BLOCK,
-) callconv(.winapi) windows.NTSTATUS {
-    _ = FileHandle;
-    _ = IoRequestToCancel;
-    _ = IoStatusBlock;
-    return @fromBackingInt(0);
-}
-
 pub fn ntNotifyChangeDirectoryFileEx(
     FileHandle: windows.HANDLE,
     Event: ?windows.HANDLE,
@@ -231,15 +265,6 @@ pub fn ntSetInformationVirtualMemory(
     return @fromBackingInt(0);
 }
 
-pub fn ntWaitForAlertByThreadId(
-    Address: ?*const anyopaque,
-    Timeout: ?*const windows.LARGE_INTEGER,
-) callconv(.winapi) windows.NTSTATUS {
-    _ = Address;
-    _ = Timeout;
-    return @fromBackingInt(0);
-}
-
 pub fn ntAlertThreadByThreadId(
     ThreadId: windows.DWORD,
 ) callconv(.winapi) windows.NTSTATUS {
@@ -257,34 +282,6 @@ pub fn ntAlertMultipleThreadByThreadId(
     _ = ThreadCount;
     _ = Unknown1;
     _ = Unknown2;
-    return @fromBackingInt(0);
-}
-
-pub fn rtlExitUserProcess(
-    ExitStatus: u32,
-) callconv(.winapi) noreturn {
-    _ = ExitStatus;
-    std.process.exit(1);
-}
-
-extern "kernel32" fn GetSystemTimeAsFileTime(out: *i64) callconv(.winapi) void;
-pub fn rtlGetSystemTimePrecise() callconv(.winapi) windows.LARGE_INTEGER {
-    var t: windows.LARGE_INTEGER = 0;
-    GetSystemTimeAsFileTime(&t);
-    return t;
-}
-
-pub fn rtlQueryPerformanceCounter(
-    PerformanceCounter: *windows.LARGE_INTEGER,
-) callconv(.winapi) windows.BOOL {
-    _ = PerformanceCounter;
-    return @fromBackingInt(0);
-}
-
-pub fn rtlQueryPerformanceFrequency(
-    PerformanceFrequency: *windows.LARGE_INTEGER,
-) callconv(.winapi) windows.BOOL {
-    _ = PerformanceFrequency;
     return @fromBackingInt(0);
 }
 
